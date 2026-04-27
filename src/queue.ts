@@ -6,7 +6,7 @@ export const redis = new IORedis(config.redis.url, {
     maxRetriesPerRequest: null, // required by BullMQ
 });
 
-export const CAMPAIGN_QUEUE_NAME = 'bbai:campaigns';
+export const CAMPAIGN_QUEUE_NAME = 'bbai-campaigns';
 
 export const campaignQueue = new Queue(CAMPAIGN_QUEUE_NAME, {
     connection: redis,
