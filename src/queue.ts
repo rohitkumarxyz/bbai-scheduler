@@ -31,6 +31,7 @@ export interface CsvJobData {
             campaignId: string;
             templateId: string;
             parameterMappings: any[];
+            mediaLink?: string;
         };
     };
 }

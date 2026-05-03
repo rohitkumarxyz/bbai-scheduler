@@ -2,18 +2,21 @@ import { Router, Request, Response } from 'express';
 import { campaignQueue } from './queue';
 import { CampaignJobData } from './queue';
 import { config } from './config';
+import { timingSafeStrEq } from './secret.util';
 
 export const router = Router();
 
 function requireSecret(req: Request, res: Response, next: () => void) {
-    if (req.headers['x-scheduler-secret'] !== config.schedulerSecret) {
+    const header = String(req.headers['x-scheduler-secret'] ?? '').trim();
+    const expected = String(config.schedulerSecret ?? '').trim();
+    if (!header || !expected || !timingSafeStrEq(header, expected)) {
         res.status(401).json({ error: 'Unauthorized' });
         return;
     }
     next();
 }
 
-// POST /api/schedule — enqueue a campaign job (immediate or delayed)
+
 router.post('/schedule', requireSecret, async (req: Request, res: Response) => {
     const { jobData, scheduledAt }: { jobData: CampaignJobData; scheduledAt?: string } = req.body;
 
@@ -34,10 +37,15 @@ router.post('/schedule', requireSecret, async (req: Request, res: Response) => {
         { delay },
     );
 
-    res.json({ jobId: job.id, delay, enqueued: true });
+    const jobId = job.id != null ? String(job.id) : '';
+    if (!jobId) {
+        res.status(500).json({ error: 'Job enqueue did not return an id' });
+        return;
+    }
+    res.json({ jobId, delay, enqueued: true });
 });
 
-// DELETE /api/jobs/:jobId — cancel (remove) a pending job
+
 router.delete('/jobs/:jobId', requireSecret, async (req: Request, res: Response) => {
     const { jobId } = req.params;
     const job = await campaignQueue.getJob(jobId);
@@ -57,7 +65,7 @@ router.delete('/jobs/:jobId', requireSecret, async (req: Request, res: Response)
     res.json({ jobId, removed: true });
 });
 
-// GET /api/jobs — list waiting/delayed jobs
+
 router.get('/jobs', requireSecret, async (_req: Request, res: Response) => {
     const [waiting, delayed] = await Promise.all([
         campaignQueue.getWaiting(0, 100),
@@ -77,7 +85,7 @@ router.get('/jobs', requireSecret, async (_req: Request, res: Response) => {
     res.json({ waiting: format(waiting), delayed: format(delayed) });
 });
 
-// GET /api/health
+
 router.get('/health', (_req: Request, res: Response) => {
     res.json({ ok: true });
 });

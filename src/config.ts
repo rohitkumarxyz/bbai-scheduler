@@ -9,7 +9,12 @@ export const config = {
         contactImportQueueUrl: process.env.CONTACT_IMPORT_QUEUE_URL || '',
     },
     nestjs: {
-        url: process.env.NESTJS_URL || 'http://localhost:8080/api/v1',
-        internalSecret: process.env.NESTJS_INTERNAL_SECRET || 'dev-internal-secret',
+        /** Must include Nest global prefix (default Nest PORT=3000, prefix api/v1). */
+        url: process.env.NESTJS_URL || 'http://localhost:3000/api/v1',
+        /** Must match bbai-nestjs SCHEDULER_SECRET on execute-broadcast */
+        internalSecret:
+            process.env.SCHEDULER_SECRET ||
+            process.env.NESTJS_INTERNAL_SECRET ||
+            'dev-secret',
     },
 };
